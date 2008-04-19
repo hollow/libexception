@@ -63,44 +63,6 @@ AC_SUBST(APR_VERSION)
 AC_SUBST(APR_CONFIG)
 
 
-echo $ac_n "${nl}Configuring Apache Portable Runtime Utility library...${nl}"
-
-APR_FIND_APU("$srcdir/apr-util", "./apr-util", 1, [0 1])
-
-
-if test "$apu_found" = "no"; then
-  AC_MSG_ERROR([APR-util not found.  Please read the documentation.])
-fi
-
-# Catch some misconfigurations:
-case ${apr_found}.${apu_found} in
-    reconfig.yes)
-    AC_MSG_ERROR([Cannot use an external APR-util with the bundled APR])
-    ;;
-    yes.reconfig)
-    AC_MSG_ERROR([Cannot use an external APR with the bundled APR-util])
-    ;;
-esac
-
-if test "$apu_found" = "reconfig"; then
-    APR_SUBDIR_CONFIG(apr-util,
-                      [--with-apr=../apr --prefix=$prefix --exec-prefix=$exec_prefix --libdir=$libdir --includedir=$includedir --bindir=$bindir],
-                      [--enable-layout=*|\'--enable-layout=*])
-fi
-
-APR_ADDTO(LDFLAGS, `$apu_config --ldflags`)
-
-APU_BINDIR=`$apu_config --bindir`
-APU_INCLUDEDIR=`$apu_config --includedir`
-APU_VERSION=`$apu_config --version`
-APU_CONFIG="$APU_BINDIR/apu-`echo ${APU_VERSION} | sed 's,\..*,,'`-config"
-
-AC_SUBST(APU_BINDIR)
-AC_SUBST(APU_INCLUDEDIR)
-AC_SUBST(APU_VERSION)
-AC_SUBST(APU_CONFIG)
-
-
 echo $ac_n "${nl}Configuring libexception...${nl}"
 
 dnl check for debugging code
@@ -121,7 +83,7 @@ APR_ADDTO(CFLAGS, [-std=gnu99 -pedantic -Wall])
 APR_ADDTO(CFLAGS, [-Wpointer-arith -Winline])
 APR_ADDTO(CFLAGS, [-Wredundant-decls -Wcast-align -Wno-unused-parameter])
 
-APR_ADDTO(APR_LIBS, `$apu_config --link-libtool --libs` `$apr_config --link-libtool --libs`)
+APR_ADDTO(APR_LIBS, `$apr_config --link-libtool --libs`)
 AC_SUBST(APR_LIBS)
 
 echo $ac_n ""
