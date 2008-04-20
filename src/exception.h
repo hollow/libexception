@@ -162,15 +162,6 @@ char *exception_print_all(void);
  * @{
  */
 
-/*! @brief clear the tryenv stack
- *
- * <tt>tryenv_clear</tt> can be used in <tt>except</tt> blocks to ignore the
- * current exception and clean up the tryenv stack. failure to clean the stack
- * while ignoring the thrown exception will result in <b>undefined
- * behaviour.</b>
- */
-void tryenv_clear(void);
-
 /*! @brief create new jump environment
  *
  * <tt>tryenv_push</tt> creates a new <tt>tryenv_t</tt> object for the current

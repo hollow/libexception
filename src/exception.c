@@ -175,6 +175,8 @@ char *exception_print_all(void)
 		strncpy(buf + len, ebuf, elen);
 		len += elen;
 		buf[len++] = '\n';
+
+		free(ebuf);
 	}
 
 	buf[len] = '\0';
