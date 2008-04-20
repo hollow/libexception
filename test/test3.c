@@ -27,8 +27,6 @@
 #include <stdlib.h>
 #include <exception.h>
 
-#include <apr_general.h>
-
 static
 void func2(void)
 {
@@ -39,15 +37,11 @@ static
 void func1(void)
 {
 	trace;
-	try { func2(); }
-	catch { pass; }
+	func2();
 }
 
 int main(int argc, char *argv[])
 {
-	apr_initialize();
-	atexit(apr_terminate);
-
 	trace;
 
 	int rc = 1;
@@ -59,9 +53,13 @@ int main(int argc, char *argv[])
 		func2();
 		trace;
 		rc = 0;
-	} catch {
+	} except {
 		trace;
-		exception_clear();
+		finally {
+			exception_dump(STDERR_FILENO);
+			trace;
+		}
+		trace;
 	}
 
 	trace;

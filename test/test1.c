@@ -27,13 +27,11 @@
 #include <stdlib.h>
 #include <exception.h>
 
-#include <apr_general.h>
-
 static
 void func2(void)
 {
 	trace;
-	throw(0, "test error");
+	throw(1, "test error");
 }
 
 static
@@ -41,14 +39,11 @@ void func1(void)
 {
 	trace;
 	try { func2(); }
-	catch { pass; }
+	except { continue; }
 }
 
 int main(int argc, char *argv[])
 {
-	apr_initialize();
-	atexit(apr_terminate);
-
 	trace;
 
 	int rc = 1;
@@ -57,10 +52,17 @@ int main(int argc, char *argv[])
 		trace;
 		func1();
 		trace;
-	} catch {
+	} except {
 		trace;
-		rc = 0;
-		exception_clear();
+		on (1) {
+			trace;
+			exception_dump(STDERR_FILENO);
+			rc = 0;
+		} finally {
+			trace;
+			exception_dump(STDERR_FILENO);
+		}
+		trace;
 	}
 
 	trace;

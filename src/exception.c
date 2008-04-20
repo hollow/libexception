@@ -26,37 +26,20 @@
 
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 #include <libgen.h>
 
-#include <apr_pools.h>
-#include <apr_strings.h>
-
 #include "exception.h"
+#include "list.h"
 
 static exception_t *exception_stack = NULL;
-static apr_pool_t *exception_pool = NULL;
-
-static
-int exception_abortfn(int retcode)
-{
-	write(2, "OOM in exception pool. Aborting.\n", 33);
-	abort();
-	return -1;
-}
 
 static
 void exception_init(void)
 {
 	trace;
-
-	if (exception_pool) {
-		apr_pool_destroy(exception_pool);
-		exception_pool = NULL;
-	}
-
-	apr_pool_create_ex(&exception_pool, NULL, &exception_abortfn, NULL);
-
-	exception_stack = apr_pcalloc(exception_pool, sizeof(exception_t));
+	LIST_NODE_ALLOC(exception_stack);
 	INIT_LIST_HEAD(&(exception_stack->list));
 }
 
@@ -64,24 +47,40 @@ void exception_clear(void)
 {
 	trace;
 
-	if (exception_pool)
-		apr_pool_destroy(exception_pool);
+	exception_t *e;
+	while ((e = exception_pop())) {
+		if (e->msg)
+			free(e->msg);
+		free(e);
+	}
 
-	exception_pool  = NULL;
+	free(exception_stack);
 	exception_stack = NULL;
 }
 
 bool exception_empty(void)
 {
 	trace;
-
-	if (!exception_stack || !exception_stack->list.next)
-		return true;
-
-	return list_empty(&(exception_stack->list));
+	return !exception_stack || list_empty(&(exception_stack->list));
 }
 
-void exception_push(const char *file, int line, const char *func,
+int exception_errno(void)
+{
+	trace;
+
+	if (exception_empty())
+		return 0;
+
+	list_t *pos;
+	exception_t *top;
+
+	pos = exception_stack->list.prev;
+	top = list_entry(pos, exception_t, list);
+
+	return top->errnum;
+}
+
+int exception_push(const char *file, int line, const char *func,
 		int errnum, const char *fmt, ...)
 {
 	trace;
@@ -89,7 +88,8 @@ void exception_push(const char *file, int line, const char *func,
 	if (!exception_stack)
 		exception_init();
 
-	exception_t *new = apr_pcalloc(exception_pool, sizeof(exception_t));
+	exception_t *new;
+	LIST_NODE_ALLOC(new);
 
 	new->file   = file;
 	new->func   = func;
@@ -102,13 +102,15 @@ void exception_push(const char *file, int line, const char *func,
 	else {
 		va_list ap;
 		va_start(ap, fmt);
-		new->msg = apr_pvsprintf(exception_pool, fmt, ap);
+		vasprintf(&new->msg, fmt, ap);
 		va_end(ap);
 	}
 
-	debug("%s:%d in %s(): errno = %d: %s", new->file, new->line, new->func, new->errnum, new->msg);
+	debug("%s:%d in %s(): errno = %d: %s", new->file, new->line,
+			new->func, new->errnum, new->msg);
 
 	list_add(&(new->list), &(exception_stack->list));
+	return 0;
 }
 
 exception_t *exception_pop(void)
@@ -118,8 +120,8 @@ exception_t *exception_pop(void)
 	if (exception_empty())
 		return NULL;
 
-	exception_t *top;
 	list_t *pos;
+	exception_t *top;
 
 	pos = exception_stack->list.next;
 	top = list_entry(pos, exception_t, list);
@@ -128,57 +130,53 @@ exception_t *exception_pop(void)
 	return top;
 }
 
-static
-char *exception_describe(exception_t *err, const char *prefix)
+char *exception_print(exception_t *err)
 {
 	trace;
+	char *buf;
 
-	apr_pool_t *p = exception_pool;
+	if (err->errnum == 0) {
+		asprintf(&buf, "at %s:%d in %s():",
+				err->file,
+				err->line,
+				err->func);
+	} else {
+		asprintf(&buf, "at %s:%d in %s(): %s (%d)",
+				err->file,
+				err->line,
+				err->func,
+				err->msg ? err->msg : strerror(err->errnum),
+				err->errnum);
+	}
 
-	char *errmsg = NULL, *errstr = NULL;
-	char *file   = basename(apr_pstrdup(p, err->file));
-
-	if (err->msg)
-		errmsg = apr_psprintf(p, "\n%10s%s", "", err->msg);
-
-	if (err->errnum > 0)
-		errstr = apr_psprintf(p, "\n%10serrno = %d: %s",
-				"", err->errnum, strerror(err->errnum));
-
-	return apr_psprintf(p, "%s %s (%s:%d):%s%s",
-			prefix, err->func, file, err->line,
-			errmsg ? errmsg : "",
-			errstr ? errstr : "");
+	return buf;
 }
 
-char *exception_dump(void)
+char *exception_print_all(void)
 {
 	trace;
 
-	apr_pool_t *p = exception_pool;
-	exception_t *next = NULL, *cur = exception_pop();
-
-	if (!cur)
+	if (exception_empty())
 		return NULL;
 
-	char *dump = apr_pstrcat(p,
-			exception_describe(cur, "in  "), "\n", NULL);
+	trace;
 
-	if (!(cur = exception_pop()))
-		return dump;
+	list_t *head = &exception_stack->list;
+	exception_t *e;
 
-	do {
-		if (!(next = exception_pop()))
-			break;
+	int len = 0;
+	char *buf = NULL;
 
-		dump = apr_pstrcat(p, dump,
-				exception_describe(cur, "from"), "\n", NULL);
+	list_for_each_entry(e, head, list) {
+		char *ebuf = exception_print(e);
+		int elen = strlen(ebuf);
 
-		cur = next;
-	} while (true);
+		buf = realloc(buf, len + elen + 2);
+		strncpy(buf + len, ebuf, elen);
+		len += elen;
+		buf[len++] = '\n';
+	}
 
-	dump = apr_pstrcat(p, dump,
-			exception_describe(cur, "by  "), "\n", NULL);
-
-	return dump;
+	buf[len] = '\0';
+	return buf;
 }

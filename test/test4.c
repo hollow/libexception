@@ -27,53 +27,54 @@
 #include <stdlib.h>
 #include <exception.h>
 
-#include <apr_general.h>
-
 static
 void func2(void)
 {
 	trace;
-	throw(0, "test error");
-}
-
-static
-void func1(void)
-{
-	trace;
+	throw(1, "test error");
 }
 
 int main(int argc, char *argv[])
 {
-	apr_initialize();
-	atexit(apr_terminate);
-
 	trace;
 
-	int rc = 0;
+	int rc = 1;
 
 	try {
-		trace;
-		func2();
-		rc = 1;
-		trace;
-	} catch {
-		trace;
-		exception_clear();
+		try {
+			try {
+				func2();
+			} except {
+				exception_dump(STDERR_FILENO);
+
+				on (1) {
+					rc--;
+				} finally {
+					continue;
+				}
+			}
+
+			throw(2, "test error");
+		} except {
+			exception_dump(STDERR_FILENO);
+
+			on (2) {
+				rc--;
+			} finally {
+				continue;
+			}
+		}
+
+		throw(3, "test error");
+	} except {
+		exception_dump(STDERR_FILENO);
+
+		on (3) {
+			rc--;
+		} finally {
+			continue;
+		}
 	}
-
-	trace;
-
-	try {
-		trace;
-		func1();
-		trace;
-	} catch {
-		rc = 1;
-		trace;
-		exception_clear();
-	}
-
-	trace;
 
 	return rc;
 }

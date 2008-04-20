@@ -49,6 +49,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "exception.h"
+
 /*! @brief get container of list head */
 #define container_of(ptr, type, member) \
 	((type *)((char *)(ptr) - offsetof(type, member)))
@@ -63,13 +65,8 @@
  * using the generic single-entry routines.
  */
 
-/*! @brief list head */
-typedef struct list_head {
-	struct list_head *next, *prev;
-} list_t;
-
 #define LIST_NODE_ALLOC(NAME) \
-	NAME = malloc(sizeof(*NAME))
+	NAME = calloc(1, sizeof(*NAME))
 
 static inline void INIT_LIST_HEAD(list_t *list)
 {

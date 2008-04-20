@@ -25,46 +25,24 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <unistd.h>
-#include <stdarg.h>
-#include <libgen.h>
+#include <string.h>
 #include <setjmp.h>
 
-#include <apr_pools.h>
-#include <apr_strings.h>
-
 #include "exception.h"
+#include "list.h"
 
-typedef struct tryenv_s {
+typedef struct {
 	list_t list;
 	jmp_buf env;
 } tryenv_t;
 
-jmp_buf __tryenv_buffer;
-
 static tryenv_t *tryenv_stack = NULL;
-static apr_pool_t *tryenv_pool = NULL;
-
-static
-int tryenv_abortfn(int retcode)
-{
-	write(2, "OOM in tryenv pool. Aborting.\n", 30);
-	abort();
-	return -1;
-}
 
 static
 void tryenv_init(void)
 {
 	trace;
-
-	if (tryenv_pool) {
-		apr_pool_destroy(tryenv_pool);
-		tryenv_pool = NULL;
-	}
-
-	apr_pool_create_ex(&tryenv_pool, NULL, &tryenv_abortfn, NULL);
-
-	tryenv_stack = apr_pcalloc(tryenv_pool, sizeof(tryenv_t));
+	LIST_NODE_ALLOC(tryenv_stack);
 	INIT_LIST_HEAD(&(tryenv_stack->list));
 }
 
@@ -72,24 +50,31 @@ static
 bool tryenv_empty(void)
 {
 	trace;
-
-	if (!tryenv_stack || !tryenv_stack->list.next)
-		return true;
-
-	trace;
-
-	return list_empty(&(tryenv_stack->list));
+	return !tryenv_stack || list_empty(&(tryenv_stack->list));
 }
 
-void tryenv_push(void)
+void tryenv_clear(void)
 {
+	trace;
+	while (!tryenv_empty())
+		tryenv_pop();
+}
+
+void tryenv_push(jmp_buf *env, int ret)
+{
+	trace;
+
+	if (ret != 0)
+		return;
+
 	trace;
 
 	if (!tryenv_stack)
 		tryenv_init();
 
-	tryenv_t *new = apr_pcalloc(tryenv_pool, sizeof(tryenv_t));
-	memcpy(new->env, __tryenv_buffer, sizeof(jmp_buf));
+	tryenv_t *new;
+	LIST_NODE_ALLOC(new);
+	memcpy(&new->env, env, sizeof(jmp_buf));
 	list_add(&(new->list), &(tryenv_stack->list));
 }
 
@@ -100,12 +85,20 @@ void tryenv_default_handler(void)
 
 	char *ebuf;
 
-	if (exception_empty())
+	if (exception_empty()) {
 		ebuf = "internal error: tryenv_default_handler called with empty exception stack";
-	else if (!(ebuf = exception_dump()))
-		ebuf = "internal error: no dump for exception stack";
+		write(STDOUT_FILENO, ebuf, strlen(ebuf));
+	}
 
-	write(STDOUT_FILENO, ebuf, strlen(ebuf));
+	else {
+		exception_t *e;
+		while ((e = exception_pop())) {
+			ebuf = exception_print(e);
+			write(STDOUT_FILENO, ebuf, strlen(ebuf));
+			free(ebuf);
+		}
+	}
+
 	abort();
 }
 
@@ -118,13 +111,19 @@ void tryenv_pop(void)
 
 	trace;
 
-	tryenv_t *top;
 	list_t *pos;
+	tryenv_t *top;
 
 	pos = tryenv_stack->list.next;
 	top = list_entry(pos, tryenv_t, list);
 
 	list_del(pos);
+	free(top);
+
+	if (tryenv_stack && tryenv_empty()) {
+		free(tryenv_stack);
+		tryenv_stack = NULL;
+	}
 }
 
 void tryenv_jmp(void)
@@ -136,11 +135,17 @@ void tryenv_jmp(void)
 
 	trace;
 
-	tryenv_t *top;
 	list_t *pos;
+	tryenv_t *top;
 
 	pos = tryenv_stack->list.next;
 	top = list_entry(pos, tryenv_t, list);
 
-	siglongjmp(top->env, 1);
+	jmp_buf env;
+	memcpy(&env, &top->env, sizeof(jmp_buf));
+
+	list_del(pos);
+	free(top);
+
+	longjmp(env, 1);
 }

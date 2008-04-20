@@ -1,7 +1,7 @@
 default: all
 
 all:
-	aclocal -I m4
+	aclocal
 	libtoolize --force --copy --automake
 	automake -afc
 	autoconf
