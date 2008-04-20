@@ -39,19 +39,11 @@ typedef struct {
 static tryenv_t *tryenv_stack = NULL;
 
 static
-void tryenv_free(void)
-{
-	if (tryenv_stack)
-		free(tryenv_stack);
-}
-
-static
 void tryenv_init(void)
 {
 	trace;
 	LIST_NODE_ALLOC(tryenv_stack);
 	INIT_LIST_HEAD(&(tryenv_stack->list));
-	atexit(tryenv_free);
 }
 
 static

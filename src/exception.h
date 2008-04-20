@@ -32,11 +32,7 @@
 #include <errno.h>
 #include <setjmp.h>
 #include <string.h>
-
-/* from list.h */
-typedef struct list_head {
-	struct list_head *next, *prev;
-} list_t;
+#include <list.h>
 
 /*! @defgroup exception exception stack
  *

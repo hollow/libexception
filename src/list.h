@@ -65,6 +65,11 @@
  * using the generic single-entry routines.
  */
 
+/*! @brief list head */
+typedef struct list_head {
+	struct list_head *next, *prev;
+} list_t;
+
 #define LIST_NODE_ALLOC(NAME) \
 	NAME = calloc(1, sizeof(*NAME))
 
