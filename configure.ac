@@ -1,6 +1,6 @@
 dnl generic configuration
 AC_PREREQ(2.59)
-AC_INIT(libexception, 0.1, hollow@gentoo.org)
+AC_INIT(libexception, 0.1)
 
 AC_GNU_SOURCE
 

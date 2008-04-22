@@ -32,7 +32,6 @@
 #include <errno.h>
 #include <setjmp.h>
 #include <string.h>
-#include <list.h>
 
 /*! @defgroup exception exception stack
  *
@@ -41,20 +40,6 @@
  *
  * @{
  */
-
-/*! @brief the exception struct
- *
- * an object of type <tt>exception_t</tt> stores one exception and a
- * doubly-linked list to create the exception stack.
- */
-typedef struct {
-	const char *file; /*!< source file of this exception */
-	const char *func; /*!< function of this exception */
-	int line;         /*!< line in the source file of this exception */
-	int errnum;       /*!< the errno value when this exception was thrown */
-	char *msg;        /*!< the error message for this exception */
-	list_t list;      /*!< exception stack list */
-} exception_t;
 
 /*! @brief clear the exception stack
  *
@@ -73,7 +58,7 @@ void exception_clear(void);
  * <tt>exception_empty</tt> checks whether the exception stack is empty.
  *
  * @note this function should not be used directly,
- * <tt>try</tt>/<tt>except</tt> macros provide better semantics.
+ * <tt>try</tt>/<tt>except</tt> provide better semantics.
  *
  * @return <tt>true</tt> if the exception stack is empty, <tt>false</tt>
  *         otherwise.
@@ -85,14 +70,17 @@ bool exception_empty(void);
  * <tt>exception_errno</tt> returns the original errno which caused this
  * exception.
  *
+ * @note this function should not be used directly, <tt>on</tt> provides better
+ * semantics.
+ *
  * @return errno value
  */
 int exception_errno(void);
 
 /*! @brief create new exception
  *
- * <tt>exception_push</tt> creates a new object of type <tt>exception_t</tt>
- * and pushes it onto the exception stack.
+ * <tt>exception_push</tt> creates a new exception object and pushes it onto
+ * the exception stack.
  *
  * @note this function should not be used directly, <tt>throw</tt> provides
  * better semantics.
@@ -107,24 +95,6 @@ int exception_errno(void);
  */
 int exception_push(const char *file, int line, const char *func,
 		int errnum, const char *fmt, ...);
-
-/*! @brief get last exception
- *
- * <tt>exception_pop</tt> deletes and returns the topmost exception object on
- * the stack.
- *
- * @return a pointer to the topmost exception object
- */
-exception_t *exception_pop(void);
-
-/*! @brief print exception
- *
- * <tt>exception_print</tt> returns an exception description in standard
- * format.
- *
- * @returns pointer to description string
- */
-char *exception_print(exception_t *err);
 
 /*! @brief print exception trace
  *
@@ -185,8 +155,8 @@ void tryenv_pop(void);
  *
  * <tt>tryenv_jmp</tt> jumps to and deletes the topmost environment the stack.
  *
- * @note this function should not be used directly,
- * <tt>throw</tt>/<tt>rethrow</tt> provide better semantics.
+ * @note this function should not be used directly, <tt>throw</tt> provides
+ * better semantics.
  */
 void tryenv_jmp(void);
 
@@ -200,22 +170,6 @@ void tryenv_jmp(void);
  * @{
  */
 
-#define __exception_block(start, end) \
-	for (int __exception_block_pass = 1, start; \
-	     __exception_block_pass; \
-	     end, __exception_block_pass = 0)
-
-#define __exception_end(end) \
-	for (int __exception_block_pass = 1; \
-	     __exception_block_pass; \
-	     end, __exception_block_pass = 0)
-
-#define __setjmp_push() do { \
-	jmp_buf __tryenv_buffer; \
-	int __tryenv_ret = setjmp(__tryenv_buffer); \
-	tryenv_push(&__tryenv_buffer, __tryenv_ret); \
-} while (0)
-
 /*! @brief throw new exception
  *
  * <tt>throw</tt> creates a new exception object with <tt>exception_push</tt>
@@ -226,12 +180,24 @@ void tryenv_jmp(void);
 	tryenv_jmp(); \
 } while (0)
 
-static inline
-void __exception_rethrow(int handled)
-{
-	if (!handled)
-		tryenv_jmp();
-}
+/* executes start before and end after the block */
+#define __exception_block(start, end) \
+	for (int __exception_block_pass = 1, start; \
+	     __exception_block_pass; \
+	     end, __exception_block_pass = 0)
+
+/* executes end after the block */
+#define __exception_end(end) \
+	for (int __exception_block_pass = 1; \
+	     __exception_block_pass; \
+	     end, __exception_block_pass = 0)
+
+/* push new environment on the stack */
+#define __setjmp_push() do { \
+	jmp_buf __tryenv_buffer; \
+	int __tryenv_ret = setjmp(__tryenv_buffer); \
+	tryenv_push(&__tryenv_buffer, __tryenv_ret); \
+} while (0)
 
 /*! @brief start new try block
  *
@@ -243,6 +209,15 @@ void __exception_rethrow(int handled)
 	__setjmp_push(); \
 	if (exception_empty()) \
 		__exception_end(tryenv_pop())
+
+/* this cannot be a macro because __exception_block does not allow brace
+ * expressions in for loops */
+static inline
+void __exception_rethrow(int handled)
+{
+	if (!handled)
+		tryenv_jmp();
+}
 
 /*! @brief catch exception
  *
@@ -257,13 +232,18 @@ void __exception_rethrow(int handled)
 
 /*! @brief handle exception
  *
- * <tt>on</tt> handles the exception <tt>errnum</tt>.
+ * <tt>on</tt> handles the exception <tt>errnum</tt>, passes control to the
+ * following block and clears the exception stack afterwards.
  */
 #define on(errnum) \
 	if (!__exception_handled && exception_errno() == errnum && (__exception_handled = 1)) \
 		__exception_end(exception_clear())
 
-/*! @brief handle unknown errors */
+/*! @brief handle unknown exceptions
+ *
+ * <tt>finally</tt> handles <em>all</em> exceptions, passes control to the
+ * following block and clears the exception stack afterwards.
+ */
 #define finally \
 	if (!__exception_handled && (__exception_handled = 1)) \
 		__exception_end(exception_clear())

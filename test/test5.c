@@ -30,22 +30,18 @@
 static
 void func2(void)
 {
-	trace;
 	throw(1, "test error");
 }
 
 static
 void func1(void)
 {
-	trace;
 	try { func2(); }
 	except { continue; }
 }
 
 int main(int argc, char *argv[])
 {
-	trace;
-
 	int rc = 1;
 
 	try {

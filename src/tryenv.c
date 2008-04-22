@@ -37,46 +37,42 @@ typedef struct {
 	jmp_buf env;
 } tryenv_t;
 
-static tryenv_t *tryenv_stack = NULL;
+static tryenv_t tryenv_stack;
+static list_t *tryenv_head = NULL;
 
 static
 void tryenv_init(void)
 {
-	trace;
-	LIST_NODE_ALLOC(tryenv_stack);
-	INIT_LIST_HEAD(&(tryenv_stack->list));
+	if (!tryenv_head) {
+		tryenv_head = &tryenv_stack.list;
+		INIT_LIST_HEAD(tryenv_head);
+	}
 }
 
 static
 bool tryenv_empty(void)
 {
-	trace;
-	return !tryenv_stack || list_empty(&(tryenv_stack->list));
+	tryenv_init();
+	return list_empty(tryenv_head);
 }
 
 void tryenv_push(jmp_buf *env, int ret)
 {
-	trace;
-
 	if (ret != 0)
 		return;
 
-	trace;
-
-	if (!tryenv_stack)
-		tryenv_init();
+	tryenv_init();
 
 	tryenv_t *new;
 	LIST_NODE_ALLOC(new);
 	memcpy(&new->env, env, sizeof(jmp_buf));
-	list_add(&(new->list), &(tryenv_stack->list));
+
+	list_add(&new->list, tryenv_head);
 }
 
 static
 void tryenv_default_handler(void)
 {
-	trace;
-
 	char *ebuf = "FATAL: uncaught exception\n";
 	write(STDERR_FILENO, ebuf, strlen(ebuf));
 
@@ -91,41 +87,28 @@ void tryenv_default_handler(void)
 
 void tryenv_pop(void)
 {
-	trace;
-
 	if (tryenv_empty())
 		return;
-
-	trace;
 
 	list_t *pos;
 	tryenv_t *top;
 
-	pos = tryenv_stack->list.next;
+	pos = tryenv_head->next;
 	top = list_entry(pos, tryenv_t, list);
 
 	list_del(pos);
 	free(top);
-
-	if (tryenv_stack && tryenv_empty()) {
-		free(tryenv_stack);
-		tryenv_stack = NULL;
-	}
 }
 
 void tryenv_jmp(void)
 {
-	trace;
-
 	if (tryenv_empty())
 		tryenv_default_handler();
-
-	trace;
 
 	list_t *pos;
 	tryenv_t *top;
 
-	pos = tryenv_stack->list.next;
+	pos = tryenv_head->next;
 	top = list_entry(pos, tryenv_t, list);
 
 	jmp_buf env;

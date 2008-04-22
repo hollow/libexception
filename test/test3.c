@@ -30,38 +30,27 @@
 static
 void func2(void)
 {
-	trace;
 }
 
 static
 void func1(void)
 {
-	trace;
 	func2();
 }
 
 int main(int argc, char *argv[])
 {
-	trace;
-
 	int rc = 1;
 
 	try {
-		trace;
 		func1();
-		trace;
 		func2();
-		trace;
 		rc = 0;
 	} except {
-		trace;
 		finally {
 			exception_dump(STDERR_FILENO);
-			trace;
 		}
-		trace;
 	}
 
-	trace;
 	return rc;
 }

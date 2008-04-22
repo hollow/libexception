@@ -34,10 +34,8 @@
 	printf(__VA_ARGS__); \
 	printf("\n"); \
 } while (0)
-#define trace printf("[trace] %s:%d in %s()\n", __FILE__, __LINE__, __FUNCTION__)
 #else
 #define debug(...)
-#define trace
 #endif
 
 #endif

@@ -30,41 +30,30 @@
 static
 void func2(void)
 {
-	trace;
 	throw(1, "test error");
 }
 
 static
 void func1(void)
 {
-	trace;
 	try { func2(); }
 	except { continue; }
 }
 
 int main(int argc, char *argv[])
 {
-	trace;
-
 	int rc = 1;
 
 	try {
-		trace;
 		func1();
-		trace;
 	} except {
-		trace;
 		on (1) {
-			trace;
 			exception_dump(STDERR_FILENO);
 			rc = 0;
 		} finally {
-			trace;
 			exception_dump(STDERR_FILENO);
 		}
-		trace;
 	}
 
-	trace;
 	return rc;
 }

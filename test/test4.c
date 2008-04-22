@@ -30,14 +30,11 @@
 static
 void func2(void)
 {
-	trace;
 	throw(1, "test error");
 }
 
 int main(int argc, char *argv[])
 {
-	trace;
-
 	int rc = 1;
 
 	try {

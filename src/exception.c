@@ -34,49 +34,55 @@
 #include "exception.h"
 #include "list.h"
 
-static exception_t *exception_stack = NULL;
+typedef struct {
+	list_t list;
+	const char *file;
+	const char *func;
+	int line;
+	int errnum;
+	char *msg;
+} exception_t;
 
-static
+static exception_t exception_stack;
+static list_t *exception_head = NULL;
+
+static inline
 void exception_init(void)
 {
-	trace;
-	LIST_NODE_ALLOC(exception_stack);
-	INIT_LIST_HEAD(&(exception_stack->list));
+	if (!exception_head) {
+		exception_head = &exception_stack.list;
+		INIT_LIST_HEAD(exception_head);
+	}
 }
 
 void exception_clear(void)
 {
-	trace;
+	list_t *head = exception_head;
+	list_t *pos, *tmp;
 
-	exception_t *e;
-	while ((e = exception_pop())) {
+	list_for_each_safe(pos, tmp, head) {
+		list_del(pos);
+		exception_t *e = list_entry(pos, exception_t, list);
+
 		if (e->msg)
 			free(e->msg);
 		free(e);
 	}
-
-	free(exception_stack);
-	exception_stack = NULL;
 }
 
 bool exception_empty(void)
 {
-	trace;
-	return !exception_stack || list_empty(&(exception_stack->list));
+	exception_init();
+	return list_empty(exception_head);
 }
 
 int exception_errno(void)
 {
-	trace;
-
 	if (exception_empty())
 		return 0;
 
-	list_t *pos;
-	exception_t *top;
-
-	pos = exception_stack->list.prev;
-	top = list_entry(pos, exception_t, list);
+	list_t *pos = exception_head->prev;
+	exception_t *top = list_entry(pos, exception_t, list);
 
 	return top->errnum;
 }
@@ -84,10 +90,7 @@ int exception_errno(void)
 int exception_push(const char *file, int line, const char *func,
 		int errnum, const char *fmt, ...)
 {
-	trace;
-
-	if (!exception_stack)
-		exception_init();
+	exception_init();
 
 	exception_t *new;
 	LIST_NODE_ALLOC(new);
@@ -97,10 +100,9 @@ int exception_push(const char *file, int line, const char *func,
 	new->line   = line;
 	new->errnum = errnum;
 
-	if (fmt == NULL)
+	if (fmt == NULL) {
 		new->msg = NULL;
-
-	else {
+	} else {
 		va_list ap;
 		va_start(ap, fmt);
 		vasprintf(&new->msg, fmt, ap);
@@ -110,39 +112,22 @@ int exception_push(const char *file, int line, const char *func,
 	debug("%s:%d in %s(): errno = %d: %s", new->file, new->line,
 			new->func, new->errnum, new->msg);
 
-	list_add(&(new->list), &(exception_stack->list));
+	list_add(&new->list, exception_head);
 	return 0;
 }
 
-exception_t *exception_pop(void)
-{
-	trace;
-
-	if (exception_empty())
-		return NULL;
-
-	list_t *pos;
-	exception_t *top;
-
-	pos = exception_stack->list.next;
-	top = list_entry(pos, exception_t, list);
-
-	list_del(pos);
-	return top;
-}
-
+static
 char *exception_print(exception_t *err)
 {
-	trace;
 	char *buf;
 
 	if (err->msg == NULL) {
-		asprintf(&buf, "at %s:%d in %s():",
+		asprintf(&buf, "at %s:%d in %s():\n",
 				err->file,
 				err->line,
 				err->func);
 	} else {
-		asprintf(&buf, "at %s:%d in %s(): %s (%d)",
+		asprintf(&buf, "at %s:%d in %s(): %s (%d)\n",
 				err->file,
 				err->line,
 				err->func,
@@ -155,27 +140,22 @@ char *exception_print(exception_t *err)
 
 char *exception_print_all(void)
 {
-	trace;
-
 	if (exception_empty())
 		return NULL;
 
-	trace;
-
-	list_t *head = &exception_stack->list;
+	list_t *head = exception_head;
 	exception_t *e;
 
-	int len = 0;
 	char *buf = NULL;
+	int len = 0;
 
 	list_for_each_entry(e, head, list) {
 		char *ebuf = exception_print(e);
 		int elen = strlen(ebuf);
 
-		buf = realloc(buf, len + elen + 2);
+		buf = realloc(buf, len + elen + 1);
 		strncpy(buf + len, ebuf, elen);
 		len += elen;
-		buf[len++] = '\n';
 
 		free(ebuf);
 	}
