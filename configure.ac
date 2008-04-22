@@ -50,7 +50,12 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 "])
 
 dnl Makefile outputs
-AC_CONFIG_FILES(Makefile src/Makefile test/Makefile)
+AC_CONFIG_FILES(Makefile
+                Doxyfile
+                src/Makefile
+                test/Makefile)
 AC_OUTPUT
 
 AC_MSG_NOTICE([$SUMMARY])
+
+# vim: ts=4 expandtab

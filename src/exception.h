@@ -109,7 +109,7 @@ char *exception_print_all(void);
  *
  * <tt>exception_dump</tt> writes the output of <tt>exception_print_all</tt> to the given file descriptor.
  *
- * @params fd file descriptor
+ * @param fd file descriptor
  */
 #define exception_dump(fd) do { \
 	char *buf = exception_print_all(); \

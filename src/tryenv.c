@@ -25,6 +25,7 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
 
@@ -40,7 +41,7 @@ typedef struct {
 static tryenv_t tryenv_stack;
 static list_t *tryenv_head = NULL;
 
-static
+static inline
 void tryenv_init(void)
 {
 	if (!tryenv_head) {
@@ -49,7 +50,7 @@ void tryenv_init(void)
 	}
 }
 
-static
+static inline
 bool tryenv_empty(void)
 {
 	tryenv_init();

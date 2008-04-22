@@ -49,8 +49,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "exception.h"
-
 /*! @brief get container of list head */
 #define container_of(ptr, type, member) \
 	((type *)((char *)(ptr) - offsetof(type, member)))
