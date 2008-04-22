@@ -136,7 +136,7 @@ char *exception_print(exception_t *err)
 	trace;
 	char *buf;
 
-	if (err->errnum == 0) {
+	if (err->msg == NULL) {
 		asprintf(&buf, "at %s:%d in %s():",
 				err->file,
 				err->line,
@@ -146,7 +146,7 @@ char *exception_print(exception_t *err)
 				err->file,
 				err->line,
 				err->func,
-				err->msg ? err->msg : strerror(err->errnum),
+				err->msg,
 				err->errnum);
 	}
 

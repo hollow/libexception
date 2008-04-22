@@ -77,22 +77,15 @@ void tryenv_default_handler(void)
 {
 	trace;
 
-	char *ebuf;
+	char *ebuf = "FATAL: uncaught exception\n";
+	write(STDERR_FILENO, ebuf, strlen(ebuf));
 
-	if (exception_empty()) {
+	if (exception_empty())
 		ebuf = "internal error: tryenv_default_handler called with empty exception stack";
-		write(STDOUT_FILENO, ebuf, strlen(ebuf));
-	}
+	else
+		ebuf = exception_print_all();
 
-	else {
-		exception_t *e;
-		while ((e = exception_pop())) {
-			ebuf = exception_print(e);
-			write(STDOUT_FILENO, ebuf, strlen(ebuf));
-			free(ebuf);
-		}
-	}
-
+	write(STDERR_FILENO, ebuf, strlen(ebuf));
 	abort();
 }
 
