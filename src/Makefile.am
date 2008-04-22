@@ -1,6 +1,6 @@
 INCLUDES = -I$(srcdir)
 
-noinst_HEADERS = list.h
+noinst_HEADERS = debug.h list.h
 include_HEADERS = exception.h
 
 lib_LTLIBRARIES = libexception.la

@@ -30,6 +30,7 @@
 #include <string.h>
 #include <libgen.h>
 
+#include "debug.h"
 #include "exception.h"
 #include "list.h"
 

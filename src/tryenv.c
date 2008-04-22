@@ -28,6 +28,7 @@
 #include <string.h>
 #include <setjmp.h>
 
+#include "debug.h"
 #include "exception.h"
 #include "list.h"
 
