@@ -82,9 +82,9 @@ int exception_errno(void)
 		return 0;
 
 	list_t *pos = exception_head->prev;
-	exception_t *top = list_entry(pos, exception_t, list);
+	exception_t *e = list_entry(pos, exception_t, list);
 
-	return top->errnum;
+	return e->errnum;
 }
 
 int exception_push(const char *file, int line, const char *func,
@@ -117,22 +117,22 @@ int exception_push(const char *file, int line, const char *func,
 }
 
 static
-char *exception_print(exception_t *err)
+char *exception_print(exception_t *e)
 {
 	char *buf;
 
-	if (err->msg == NULL) {
+	if (e->msg == NULL) {
 		asprintf(&buf, "at %s:%d in %s():\n",
-				err->file,
-				err->line,
-				err->func);
+				e->file,
+				e->line,
+				e->func);
 	} else {
 		asprintf(&buf, "at %s:%d in %s(): %s (%d)\n",
-				err->file,
-				err->line,
-				err->func,
-				err->msg,
-				err->errnum);
+				e->file,
+				e->line,
+				e->func,
+				e->msg,
+				e->errnum);
 	}
 
 	return buf;

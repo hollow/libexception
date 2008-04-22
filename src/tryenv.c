@@ -91,14 +91,11 @@ void tryenv_pop(void)
 	if (tryenv_empty())
 		return;
 
-	list_t *pos;
-	tryenv_t *top;
-
-	pos = tryenv_head->next;
-	top = list_entry(pos, tryenv_t, list);
+	list_t *pos = tryenv_head->next;
+	tryenv_t *env = list_entry(pos, tryenv_t, list);
 
 	list_del(pos);
-	free(top);
+	free(env);
 }
 
 void tryenv_jmp(void)
@@ -106,17 +103,14 @@ void tryenv_jmp(void)
 	if (tryenv_empty())
 		tryenv_default_handler();
 
-	list_t *pos;
-	tryenv_t *top;
+	list_t *pos = tryenv_head->next;
+	tryenv_t *env = list_entry(pos, tryenv_t, list);
 
-	pos = tryenv_head->next;
-	top = list_entry(pos, tryenv_t, list);
-
-	jmp_buf env;
-	memcpy(&env, &top->env, sizeof(jmp_buf));
+	jmp_buf buf;
+	memcpy(&buf, &env->env, sizeof(jmp_buf));
 
 	list_del(pos);
-	free(top);
+	free(env);
 
-	longjmp(env, 1);
+	longjmp(buf, 1);
 }
