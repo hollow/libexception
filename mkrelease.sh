@@ -9,6 +9,10 @@ mkdir -p ~/public_html/projects/${PROJECT}/dist
 
 disttar=~/public_html/projects/${PROJECT}/dist/${PROJECT}-${VERSION}.tar.bz2
 
+ebegin "Generating project page"
+rst2html.py < README > ~/public_html/projects/${PROJECT}/index.html
+eend $?
+
 ebegin "Creating release tarball"
 if [[ -e ${disttar} ]]; then
 	eend 1
@@ -19,10 +23,6 @@ else
 	bzip2 > ~/public_html/projects/${PROJECT}/dist/${PROJECT}-${VERSION}.tar.bz2
 	eend $?
 fi
-
-ebegin "Generating project page"
-rst2html.py < README > ~/public_html/projects/${PROJECT}/index.html
-eend $?
 
 ebegin "Generating documentation"
 ./autogen.sh

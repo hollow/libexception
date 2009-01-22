@@ -1,6 +1,6 @@
-=========
-porticron
-=========
+============
+libexception
+============
 
 :Author: `Benedikt Böhm <bb@xnull.de>`_
 :Version: 0.1
@@ -8,7 +8,7 @@ porticron
 :Source: http://git.xnull.de/gitweb/?p=libexception.git
 :Download: http://bb.xnull.de/projects/libexception/dist/
 
-libexception is a exception handling library for C. It uses the ``setjmp`` and
+libexception is an exception handling library for C. It uses the ``setjmp`` and
 ``longjmp`` calls to build a stack of jump buffers and exceptions and provides
 high level semantics implemented as macros to make exception handling in C
 unobtrusive and easy to use.
