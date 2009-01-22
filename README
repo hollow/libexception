@@ -1,0 +1,32 @@
+=========
+porticron
+=========
+
+:Author: `Benedikt Böhm <bb@xnull.de>`_
+:Version: 0.1
+:Web: http://bb.xnull.de/projects/libexception/
+:Source: http://git.xnull.de/gitweb/?p=libexception.git
+:Download: http://bb.xnull.de/projects/libexception/dist/
+
+libexception is a exception handling library for C. It uses the ``setjmp`` and
+``longjmp`` calls to build a stack of jump buffers and exceptions and provides
+high level semantics implemented as macros to make exception handling in C
+unobtrusive and easy to use.
+
+Installation
+============
+
+To install libexception call ``./configure``, then ``make`` and finally ``make install``.
+
+Documentation
+=============
+
+The libexception API reference can be found `on-line
+<http://bb.xnull.de/projects/libexception/doc/html/>`_ or in `PDF
+<http://bb.xnull.de/projects/libexception/doc/latex/refman.pdf>`_.
+
+Examples
+========
+
+Examples can be found in the `test-suite
+<http://git.xnull.de/gitweb/?p=libexception.git;a=tree;f=test>`_.
