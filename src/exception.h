@@ -1,4 +1,4 @@
-// Copyright (c) 2008 Benedikt Böhm <hollow@gentoo.org>
+// Copyright (c) 2006-2009 Benedikt Böhm <bb@xnull.de>
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
