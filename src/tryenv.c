@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
+#include <pthread.h>
 
 #include "debug.h"
 #include "exception.h"
@@ -12,23 +13,35 @@ typedef struct {
 	jmp_buf env;
 } tryenv_t;
 
-static tryenv_t tryenv_stack;
-static list_t *tryenv_head = NULL;
+static pthread_key_t tryenv_head_key;
+static pthread_once_t tryenv_head_once = PTHREAD_ONCE_INIT;
 
-static inline
+static
+void tryenv_init_key(void)
+{
+	pthread_key_create(&tryenv_head_key, NULL);
+}
+
+static
 void tryenv_init(void)
 {
-	if (!tryenv_head) {
-		tryenv_head = &tryenv_stack.list;
-		INIT_LIST_HEAD(tryenv_head);
+	pthread_once(&tryenv_head_once, tryenv_init_key);
+	list_t *head = pthread_getspecific(tryenv_head_key);
+
+	if (!head) {
+		tryenv_t *new;
+		LIST_NODE_ALLOC(new);
+		INIT_LIST_HEAD(&(new->list));
+		pthread_setspecific(tryenv_head_key, &(new->list));
 	}
 }
 
-static inline
+static
 bool tryenv_empty(void)
 {
 	tryenv_init();
-	return list_empty(tryenv_head);
+	list_t *head = pthread_getspecific(tryenv_head_key);
+	return list_empty(head);
 }
 
 void tryenv_push(jmp_buf *env, int ret)
@@ -42,7 +55,8 @@ void tryenv_push(jmp_buf *env, int ret)
 	LIST_NODE_ALLOC(new);
 	memcpy(&new->env, env, sizeof(jmp_buf));
 
-	list_add(&new->list, tryenv_head);
+	list_t *head = pthread_getspecific(tryenv_head_key);
+	list_add(&new->list, head);
 }
 
 static
@@ -65,7 +79,8 @@ void tryenv_pop(void)
 	if (tryenv_empty())
 		return;
 
-	list_t *pos = tryenv_head->next;
+	list_t *head = pthread_getspecific(tryenv_head_key);
+	list_t *pos = head->next;
 	tryenv_t *env = list_entry(pos, tryenv_t, list);
 
 	list_del(pos);
@@ -77,7 +92,8 @@ void tryenv_jmp(void)
 	if (tryenv_empty())
 		tryenv_default_handler();
 
-	list_t *pos = tryenv_head->next;
+	list_t *head = pthread_getspecific(tryenv_head_key);
+	list_t *pos = head->next;
 	tryenv_t *env = list_entry(pos, tryenv_t, list);
 
 	jmp_buf buf;

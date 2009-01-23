@@ -17,6 +17,22 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+# define PTHREAD_LIBS to the linker flag used for pthread support
+AC_LANG_CONFTEST([AC_LANG_PROGRAM(
+  [[#include <pthread.h>]],
+  [[pthread_mutex_t test_mutex;]]
+)])
+${CC} -pthread conftest.c -o conftest.o > /dev/null 2>&1
+if test $? -eq 0; then
+    PTHREAD_LIBS="-pthread"
+else
+    ${CC} -lpthread conftest.c -o conftest.o > /dev/null 2>&1
+    if test $? -eq 0; then
+        PTHREAD_LIBS="-lpthread"
+    fi
+fi
+AC_SUBST(PTHREAD_LIBS)
+
 dnl check for debugging code
 AC_ARG_ENABLE([debug],
               AC_HELP_STRING([--enable-debug], [enable debugging (default: disabled)]),

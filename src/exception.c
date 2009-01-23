@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "debug.h"
 #include "exception.h"
@@ -17,22 +18,36 @@ typedef struct {
 	char *msg;
 } exception_t;
 
-static exception_t exception_stack;
-static list_t *exception_head = NULL;
+static pthread_key_t exception_head_key;
+static pthread_once_t exception_head_once = PTHREAD_ONCE_INIT;
 
-static inline
+static
+void exception_key_init(void)
+{
+	pthread_key_create(&exception_head_key, NULL);
+}
+
+static
 void exception_init(void)
 {
-	if (!exception_head) {
-		exception_head = &exception_stack.list;
-		INIT_LIST_HEAD(exception_head);
+	pthread_once(&exception_head_once, exception_key_init);
+	list_t *head = pthread_getspecific(exception_head_key);
+
+	if (!head) {
+		exception_t *new;
+		LIST_NODE_ALLOC(new);
+		INIT_LIST_HEAD(&(new->list));
+		pthread_setspecific(exception_head_key, &(new->list));
 	}
 }
 
 void exception_clear(void)
 {
-	list_t *head = exception_head;
+	list_t *head = pthread_getspecific(exception_head_key);
 	list_t *pos, *tmp;
+
+	if (!head)
+		return;
 
 	list_for_each_safe(pos, tmp, head) {
 		list_del(pos);
@@ -47,7 +62,8 @@ void exception_clear(void)
 bool exception_empty(void)
 {
 	exception_init();
-	return list_empty(exception_head);
+	list_t *head = pthread_getspecific(exception_head_key);
+	return list_empty(head);
 }
 
 int exception_errno(void)
@@ -55,7 +71,8 @@ int exception_errno(void)
 	if (exception_empty())
 		return 0;
 
-	list_t *pos = exception_head->prev;
+	list_t *head = pthread_getspecific(exception_head_key);
+	list_t *pos = head->prev;
 	exception_t *e = list_entry(pos, exception_t, list);
 
 	return e->errnum;
@@ -86,7 +103,8 @@ int exception_push(const char *file, int line, const char *func,
 	debug("%s:%d in %s(): errno = %d: %s", new->file, new->line,
 			new->func, new->errnum, new->msg);
 
-	list_add(&new->list, exception_head);
+	list_t *head = pthread_getspecific(exception_head_key);
+	list_add(&new->list, head);
 	return 0;
 }
 
@@ -117,7 +135,7 @@ char *exception_print_all(void)
 	if (exception_empty())
 		return NULL;
 
-	list_t *head = exception_head;
+	list_t *head = pthread_getspecific(exception_head_key);
 	exception_t *e;
 
 	char *buf = NULL;
