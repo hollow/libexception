@@ -10,7 +10,7 @@ mkdir -p ~/public_html/projects/${PROJECT}/dist
 disttar=~/public_html/projects/${PROJECT}/dist/${PROJECT}-${VERSION}.tar.bz2
 
 ebegin "Generating project page"
-rst2html.py < README > ~/public_html/projects/${PROJECT}/index.html
+rst2html.py < README.rst > ~/public_html/projects/${PROJECT}/index.html
 eend $?
 
 ebegin "Creating release tarball"
