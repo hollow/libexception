@@ -5,7 +5,7 @@ libexception
 :Author: `Benedikt Böhm <bb@xnull.de>`_
 :Version: 0.2_beta
 :Web: http://bb.xnull.de/projects/libexception/
-:Source: http://git.xnull.de/gitweb/?p=libexception.git
+:Source: http://git.xnull.de/gitweb/?p=libexception.git (also on `github <http://github.com/hollow/libexception>`_)
 :Download: http://bb.xnull.de/projects/libexception/dist/
 
 libexception is an exception handling library for C. It uses the ``setjmp`` and
