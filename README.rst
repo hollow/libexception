@@ -4,9 +4,9 @@ libexception
 
 :Author: `Benedikt Böhm <bb@xnull.de>`_
 :Version: 0.2_beta
-:Web: http://bb.xnull.de/projects/libexception/
-:Source: http://git.xnull.de/cgit/libexception/ (also on `github <http://github.com/hollow/libexception>`_)
-:Download: http://bb.xnull.de/projects/libexception/dist/
+:Web: http://github.com/hollow/libexception
+:Git: ``git clone https://github.com/hollow/libexception.git``
+:Download: http://github.com/hollow/libexception/downloads
 
 libexception is an exception handling library for C. It uses the ``setjmp`` and
 ``longjmp`` calls to build a stack of jump buffers and exceptions and provides
@@ -78,4 +78,4 @@ Examples
 ========
 
 Examples can be found in the `test-suite
-<http://git.xnull.de/gitweb/?p=libexception.git;a=tree;f=test>`_.
+<http://github.com/hollow/libexception/tree/master/test/>`_.
