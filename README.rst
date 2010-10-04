@@ -39,7 +39,7 @@ libexception uses two stacks implemented as a `doubly-linked list
 <http://isis.poly.edu/kulesh/stuff/src/klist/>`_ to record exceptions and jump
 buffers needed by ``setjmp``/``longjmp``. The work-flow is as follows:
 
-.. image:: flow.png
+.. image:: http://github.com/hollow/libexception/raw/master/flow.png
 
 #. ``try`` will call ``setjmp`` and push the resulting ``jmp_buf`` object onto the tryenv stack.
 #. usually ``setjmp`` returns zero and the following block is executed. if no
